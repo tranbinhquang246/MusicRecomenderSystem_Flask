@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS, cross_origin
 import spotipy
 import os
 import numpy as np
@@ -12,6 +13,8 @@ from spotipy.oauth2 import SpotifyClientCredentials
 
 
 app = Flask(__name__)
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 song_cluster_pipeline = Pipeline([('scaler', StandardScaler()),
                                   ('kmeans', KMeans(n_clusters=20,
                                    verbose=0))
@@ -94,9 +97,9 @@ def flatten_dict_list(dict_list):
     return flattened_dict
 
 
-def recommend_songs(song_list, spotify_data, n_songs=10):
+def recommend_songs(song_list, spotify_data, n_songs=5):
 
-    metadata_cols = ['name', 'year', 'artists', 'id']
+    metadata_cols = ['id', 'name', 'year', 'artists']
     song_dict = flatten_dict_list(song_list)
 
     song_center = get_mean_vector(song_list, spotify_data)
@@ -111,6 +114,7 @@ def recommend_songs(song_list, spotify_data, n_songs=10):
     return rec_songs[metadata_cols].to_dict(orient='records')
 
 @app.route("/", methods = ['POST'])
+@cross_origin()
 def home():
     requests_data = request.get_json()
     value = recommend_songs (requests_data, spotify_data)
